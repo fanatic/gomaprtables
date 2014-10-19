@@ -26,8 +26,8 @@ func NewColDesc(family []byte) (*ColDesc, error) {
   return &cd, nil
 }
 
-//C returns a C-representation of a column descriptor for internal use
-func (cd *ColDesc) C() C.hb_columndesc {
+//c returns a C-representation of a column descriptor for internal use
+func (cd *ColDesc) c() C.hb_columndesc {
   return cd.colDesc
 }
 

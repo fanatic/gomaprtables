@@ -5,7 +5,7 @@ import (
   "github.com/fanatic/gomaprtables"
 )
 
-var conn *gomaprtables.Conn
+var conn *gomaprtables.Connection
 
 const tableName = "/tables/jptest"
 
@@ -13,7 +13,7 @@ func init() {
   var err error
 
   // Connect
-  conn, err = gomaprtables.NewConn([]string{"192.168.2.107"})
+  conn, err = gomaprtables.NewConnection([]string{"192.168.2.107"})
   if err != nil {
     fmt.Printf("Connection error: %v\n", err)
     return

@@ -16,28 +16,14 @@ type AdminClient struct {
 }
 
 // NewAdminClient returns an AdminClient
-func (c *Conn) NewAdminClient() (*AdminClient, error) {
+func (conn *Connection) NewAdminClient() (*AdminClient, error) {
   a := AdminClient{}
-  e := C.hb_admin_create(c.hb, &a.admin)
+  e := C.hb_admin_create(conn.hb, &a.admin)
   if e != 0 {
     return nil, Errno(e)
   }
   a.errCB = make(chan C.int32_t)
   return &a, nil
-}
-
-// Close cleans up all associated structures from AdminClient and waits before returning
-func (a *AdminClient) Close() error {
-  e := C.hb_admin_destroy(a.admin, (C.hb_admin_disconnection_cb)(C.admin_dc_cb), (unsafe.Pointer)(&a.errCB))
-  if e != 0 {
-    return Errno(e)
-  }
-  // Wait around for the callback
-  e = <-a.errCB
-  if e != 0 {
-    return Errno(e)
-  }
-  return nil
 }
 
 //export adminCloseCallback
@@ -79,7 +65,7 @@ func (a *AdminClient) CreateTable(nameSpace *string, tableName string, families 
 
   cFamilies := make([]C.hb_columndesc, len(families))
   for i, fam := range families {
-    cFamilies[i] = fam.C()
+    cFamilies[i] = fam.c()
   }
 
   e := C.hb_admin_table_create(a.admin, ns, tn, (*C.hb_columndesc)(unsafe.Pointer(&cFamilies[0])), C.size_t(len(families)))
@@ -101,6 +87,20 @@ func (a *AdminClient) DeleteTable(nameSpace *string, tableName string) error {
   defer C.free(unsafe.Pointer(tn))
 
   e := C.hb_admin_table_delete(a.admin, ns, tn)
+  if e != 0 {
+    return Errno(e)
+  }
+  return nil
+}
+
+// Close cleans up all associated structures from AdminClient and waits before returning
+func (a *AdminClient) Close() error {
+  e := C.hb_admin_destroy(a.admin, (C.hb_admin_disconnection_cb)(C.admin_dc_cb), (unsafe.Pointer)(&a.errCB))
+  if e != 0 {
+    return Errno(e)
+  }
+  // Wait around for the callback
+  e = <-a.errCB
   if e != 0 {
     return Errno(e)
   }

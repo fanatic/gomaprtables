@@ -19,7 +19,7 @@ type Cell struct {
 }
 
 //NewCell is used internally to create a Cell from the C object
-func NewCell(cCell *C.hb_cell_t) *Cell {
+func newCell(cCell *C.hb_cell_t) *Cell {
   c := Cell{
     Row:       C.GoBytes(unsafe.Pointer(cCell.row), C.int(cCell.row_len)),
     Family:    C.GoBytes(unsafe.Pointer(cCell.family), C.int(cCell.family_len)),
@@ -32,7 +32,7 @@ func NewCell(cCell *C.hb_cell_t) *Cell {
 }
 
 //CCell is used internally to create a C object from a Cell
-func (c Cell) CCell() *C.hb_cell_t {
+func (c Cell) cCell() *C.hb_cell_t {
   cellPtr := C.hb_cell_t{}
 
   cellPtr.row = (*C.byte_t)(unsafe.Pointer(&c.Row[0]))

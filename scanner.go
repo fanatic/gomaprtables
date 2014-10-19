@@ -84,7 +84,7 @@ func scanNextCallback(e C.int32_t, scan C.hb_scanner_t, results *C.hb_result_t, 
 
     cResults := (*[1 << 30]C.hb_result_t)(unsafe.Pointer(results))[:numResults:numResults]
     for _, cResult := range cResults {
-      resultSet = append(resultSet, NewResult(cResult))
+      resultSet = append(resultSet, newResult(cResult))
     }
 
     e = C.hb_scanner_next(scan, (C.hb_scanner_cb)(C.sn_cb), (unsafe.Pointer)(&cb))

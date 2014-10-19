@@ -44,7 +44,7 @@ func (cl *Client) Put(nameSpace *string, tableName string, bufferable bool, rowK
   }
 
   for _, cell := range cells {
-    e = C.hb_put_add_cell(put, cell.CCell())
+    e = C.hb_put_add_cell(put, cell.cCell())
     if e != 0 {
       return Errno(e)
     }
@@ -65,7 +65,7 @@ func putCallback(e C.int32_t, client C.hb_client_t, mutation C.hb_mutation_t, re
   }
 
   C.hb_mutation_destroy(mutation)
-  *((*chan CallbackResult)(extra)) <- CallbackResult{[]*Result{NewResult(result)}, err}
+  *((*chan CallbackResult)(extra)) <- CallbackResult{[]*Result{newResult(result)}, err}
 }
 
 //Unimplemented: delete

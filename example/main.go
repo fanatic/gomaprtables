@@ -9,7 +9,7 @@ const tableName = "/tables/jptest"
 
 func main() {
   // Connect!
-  conn, err := gomaprtables.NewConn([]string{"192.168.2.107"})
+  conn, err := gomaprtables.NewConnection([]string{"192.168.2.107"})
   if err != nil {
     fmt.Printf("Connection error: %v\n", err)
     return
@@ -53,7 +53,7 @@ func main() {
   }
 }
 
-func put(conn *gomaprtables.Conn, tableName string, numRows int) error {
+func put(conn *gomaprtables.Connection, tableName string, numRows int) error {
   cb := make(chan gomaprtables.CallbackResult)
 
   for i := 0; i < numRows; i++ {

@@ -58,5 +58,5 @@ func getCallback(e C.int32_t, client C.hb_client_t, get C.hb_get_t, result C.hb_
   }
 
   C.hb_get_destroy(get)
-  *((*chan CallbackResult)(extra)) <- CallbackResult{[]*Result{NewResult(result)}, err}
+  *((*chan CallbackResult)(extra)) <- CallbackResult{[]*Result{newResult(result)}, err}
 }

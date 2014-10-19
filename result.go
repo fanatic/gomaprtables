@@ -18,8 +18,8 @@ type Result struct {
   hb_result C.hb_result_t
 }
 
-//NewResult is used internally to create a Result from the C object
-func NewResult(result C.hb_result_t) *Result {
+//newResult is used internally to create a Result from the C object
+func newResult(result C.hb_result_t) *Result {
   if result == nil {
     return nil
   }
@@ -55,7 +55,7 @@ func NewResult(result C.hb_result_t) *Result {
     r.Cells = make([]*Cell, 0, cellsLen)
     cCells := (*[1 << 30]*C.hb_cell_t)(unsafe.Pointer(cells))[:cellsLen:cellsLen]
     for _, cCell := range cCells {
-      r.Cells = append(r.Cells, NewCell(cCell))
+      r.Cells = append(r.Cells, newCell(cCell))
     }
   }
 

@@ -11,17 +11,17 @@ import "unsafe"
 import "fmt"
 import "strings"
 
-//Conn represents a connection to HBase/MapR
-type Conn struct {
+//Connection represents a connection to HBase/MapR
+type Connection struct {
   hb       C.hb_connection_t
   CLDBList []string
   a        *AdminClient
   c        *Client
 }
 
-// NewConn takes a list of CLDB servers "<server1[:port]>,..." and connects to HBase/MapR
-func NewConn(cldbs []string) (*Conn, error) {
-  conn := Conn{}
+// NewConnection takes a list of CLDB servers "<server1[:port]>,..." and connects to HBase/MapR
+func NewConnection(cldbs []string) (*Connection, error) {
+  conn := Connection{}
   conn.CLDBList = cldbs
 
   cs := C.CString(strings.Join(cldbs, ","))
@@ -36,18 +36,18 @@ func NewConn(cldbs []string) (*Conn, error) {
 }
 
 // Close cleans up all associated structures from the Connection
-func (c *Conn) Close() error {
-  if c.a != nil {
-    if err := c.a.Close(); err != nil {
+func (conn *Connection) Close() error {
+  if conn.a != nil {
+    if err := conn.a.Close(); err != nil {
       return err
     }
   }
-  if c.c != nil {
-    if err := c.c.Close(); err != nil {
+  if conn.c != nil {
+    if err := conn.c.Close(); err != nil {
       return err
     }
   }
-  e := C.hb_connection_destroy(c.hb)
+  e := C.hb_connection_destroy(conn.hb)
   if e != 0 {
     return fmt.Errorf("connection_destroy: %d\n", e)
   }
@@ -56,7 +56,7 @@ func (c *Conn) Close() error {
 
 // Helper functions
 
-func (conn *Conn) ensureAdminClient() error {
+func (conn *Connection) ensureAdminClient() error {
   if conn.a == nil {
     var err error
     conn.a, err = conn.NewAdminClient()
@@ -68,7 +68,7 @@ func (conn *Conn) ensureAdminClient() error {
 }
 
 //CreateTable creates the given table, doing all the dirty work for you
-func (conn *Conn) CreateTable(tableName string, columnFamilies [][]byte, deleteIfExist bool) error {
+func (conn *Connection) CreateTable(tableName string, columnFamilies [][]byte, deleteIfExist bool) error {
   if err := conn.ensureAdminClient(); err != nil {
     return err
   }
@@ -96,7 +96,7 @@ func (conn *Conn) CreateTable(tableName string, columnFamilies [][]byte, deleteI
   return nil
 }
 
-func (conn *Conn) ensureClient() error {
+func (conn *Connection) ensureClient() error {
   if conn.c == nil {
     var err error
     conn.c, err = conn.NewClient()
@@ -108,7 +108,7 @@ func (conn *Conn) ensureClient() error {
 }
 
 //Put adds a row to a table, doing all the dirty work for you
-func (conn *Conn) Put(tableName string, rowKey []byte, cells []Cell, cb chan CallbackResult) error {
+func (conn *Connection) Put(tableName string, rowKey []byte, cells []Cell, cb chan CallbackResult) error {
   if err := conn.ensureClient(); err != nil {
     return err
   }
@@ -119,7 +119,7 @@ func (conn *Conn) Put(tableName string, rowKey []byte, cells []Cell, cb chan Cal
 }
 
 //Get retrieves a row from a table, doing all the dirty work for you
-func (conn *Conn) Get(tableName string, rowKey []byte) (*Result, error) {
+func (conn *Connection) Get(tableName string, rowKey []byte) (*Result, error) {
   if err := conn.ensureClient(); err != nil {
     return nil, err
   }
@@ -139,7 +139,7 @@ func (conn *Conn) Get(tableName string, rowKey []byte) (*Result, error) {
 }
 
 //Scan retrieves several rows from a table, doing all the dirty work for you
-func (conn *Conn) Scan(tableName string) ([]*Result, error) {
+func (conn *Connection) Scan(tableName string) ([]*Result, error) {
   if err := conn.ensureClient(); err != nil {
     return nil, err
   }
