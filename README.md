@@ -2,6 +2,14 @@
 
 MapR Tables is an implementation of the HBase API.  This client is an extension of https://github.com/mapr/libhbase which is an asyncronous HBase client with some MapR-specific exceptions (like CLDB nodes instead of Zookeeper nodes on connection).
 
+## Compiling & Running
+```bash
+$ yum install mapr-client
+$ export LD_LIBRARY_PATH=/opt/mapr/lib:/usr/lib/jvm/java-1.7.0/jre/lib/amd64/server
+$ go build/run
+```
+
+## Example App
 ```bash
 example $ go run main.go 
   Table: /tables/jptest  NameSpace: <nil> CellCount: 2 RowKey: "row-1"
