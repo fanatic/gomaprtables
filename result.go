@@ -1,60 +1,72 @@
-package gohbase
+package gomaprtables
 
 /*
 #include <stdlib.h>
-#include <string.h>
 #include <hbase/hbase.h>
-#include <pthread.h>
-
-// Put callback
-void read_result(hb_result_t result)
-{
-  int e = 0;
-
-  if (!result) {
-    printf("NULL Result\n");
-    return;
-  }
-
-  const char *tableName;
-  size_t tableLen = 0;
-  e = hb_result_get_table(result, &tableName, &tableLen);
-  printf("    get_table: %s(err=%d)\n", tableName, e);
-
-  size_t cellCount = 0;
-  e = hb_result_get_cell_count(result, &cellCount);
-  printf("    get_cell_count: %d(err=%d)\n", (int)cellCount, e);
-
-  // Getting all cells
-  size_t i;
-  for (i = 0; i < cellCount; ++i) {
-    const hb_cell_t *cell;
-    e = hb_result_get_cell_at(result, i, &cell);
-    printf("    cell[%d]: Row: %s, [F:Q]: %s:%s, Value: %s\n", (int)i, cell->row,
- cell->family, cell->qualifier, cell->value);
-  }
-
-  const char *t;
-  const char *n;
-  size_t len;
-  e = hb_result_get_table(result, &t, &len);
-  e = hb_result_get_namespace(result, &n, &len);
-
-  printf("    Result table=%s, NameSpace=%s\n", t, n);
-}
 */
 import "C"
+import "unsafe"
+import "fmt"
 
 type Result struct {
+  TableName string
+  NameSpace *string
+  RowKey    []byte
+  NumCells  int
+  Cells     []*Cell
   hb_result C.hb_result_t
 }
 
-func NewResult(r C.hb_result_t) *Result {
-  return &Result{hb_result: r}
+func NewResult(result C.hb_result_t) *Result {
+  if result == nil {
+    return nil
+  }
+  r := Result{hb_result: result}
+
+  var tn *C.char
+  var tnLen C.size_t
+  C.hb_result_get_table(result, &tn, &tnLen)
+  r.TableName = C.GoStringN(tn, C.int(tnLen))
+
+  //Throws error in LibHdfsApi when namespace is NULL
+  var ns *C.char
+  var nsLen C.size_t
+  C.hb_result_get_namespace(result, &ns, &nsLen)
+  if ns != nil {
+    ns2 := C.GoStringN(ns, C.int(nsLen))
+    r.NameSpace = &ns2
+  }
+
+  var rk *C.byte_t
+  var rkLen C.size_t
+  C.hb_result_get_key(result, &rk, &rkLen)
+  r.RowKey = C.GoBytes(unsafe.Pointer(rk), C.int(rkLen))
+
+  var cCount C.size_t
+  C.hb_result_get_cell_count(result, &cCount)
+  r.NumCells = int(cCount)
+  if r.NumCells > 0 {
+    var cells **C.hb_cell_t
+    var cellsLen C.size_t
+    C.hb_result_get_cells(result, &cells, &cellsLen)
+
+    r.Cells = make([]*Cell, 0, cellsLen)
+    cCells := (*[1 << 30]*C.hb_cell_t)(unsafe.Pointer(cells))[:cellsLen:cellsLen]
+    for _, cCell := range cCells {
+      r.Cells = append(r.Cells, NewCell(cCell))
+    }
+  }
+
+  // Clean up the hb_result now that it's been copied off
+  C.hb_result_destroy(result)
+  return &r
 }
 
 func (r *Result) PrintResult() {
-  if r.hb_result != nil {
-    C.read_result(r.hb_result)
+  if r != nil {
+    fmt.Printf("  Table: %s  NameSpace: %v CellCount: %d RowKey: %q\n", r.TableName, r.NameSpace, r.NumCells, string(r.RowKey))
+    for i, cell := range r.Cells {
+      fmt.Printf("    cell[%d] [R]: %q, [F:Q]: %q:%q, [V]: %q, [TS]: %s\n", i, cell.Row, cell.Family, cell.Qualifier, cell.Value, cell.Timestamp)
+    }
   }
 }

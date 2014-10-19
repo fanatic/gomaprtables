@@ -2,12 +2,14 @@ package main
 
 import (
   "fmt"
-  "github.com/fanatic/gohbase"
+  "github.com/fanatic/gomaprtables"
 )
+
+const tableName = "/tables/jptest"
 
 func main() {
   // Connect!
-  conn, err := gohbase.NewConn([]string{"192.168.2.107"})
+  conn, err := gomaprtables.NewConn([]string{"192.168.2.107"})
   if err != nil {
     fmt.Printf("Connection error: %v\n", err)
     return
@@ -15,49 +17,34 @@ func main() {
 
   // Create Table (replace if exists)!
   colFamilies := [][]byte{[]byte("Id"), []byte("Name"), []byte("Family3")}
-  if err := conn.CreateTable("/tables/jptest", colFamilies, true); err != nil {
+  if err := conn.CreateTable(tableName, colFamilies, true); err != nil {
     fmt.Printf("createTable: %v\n", err)
     return
   }
 
   // Put 10 Rows!
-  err = put(conn, "/tables/jptest", 10)
+  err = put(conn, tableName, 10)
   if err != nil {
     fmt.Printf("put: %v\n", err)
     return
   }
 
-  // Get 1st Row!
-  cb := make(chan gohbase.CallbackResult)
-  err = conn.Get("/tables/jptest", []byte("row-1"), cb)
+  // Get 1st Row! (syncronously)
+  result, err := conn.Get(tableName, []byte("row-1"))
   if err != nil {
     fmt.Printf("get: %v\n", err)
     return
   }
-  result := <-cb
-  if result.Err != nil {
-    fmt.Printf("get: %v\n", result.Err)
-    return
-  }
-  result.PrintAllResults()
+  result.PrintResult()
 
   // Get All Rows!
-  cb2 := make(chan gohbase.CallbackResult)
-  err = conn.Scan("/tables/jptest", cb2)
+  results, err := conn.Scan(tableName)
   if err != nil {
     fmt.Printf("scan: %v\n", err)
     return
   }
-  for result := range cb2 {
-    if result.Err != nil {
-      fmt.Printf("scan: %v\n", result.Err)
-      return
-    }
-    if len(result.Results) > 0 {
-      result.PrintAllResults()
-    } else {
-      break
-    }
+  for _, result := range results {
+    result.PrintResult()
   }
 
   // Clean up!
@@ -66,18 +53,17 @@ func main() {
   }
 }
 
-func put(conn *gohbase.Conn, tableName string, numRows int) error {
-  cb := make(chan gohbase.CallbackResult)
+func put(conn *gomaprtables.Conn, tableName string, numRows int) error {
+  cb := make(chan gomaprtables.CallbackResult)
 
   for i := 0; i < numRows; i++ {
     row := []byte(fmt.Sprintf("row-%d", i))
 
-    cells := []gohbase.Cell{
-      gohbase.Cell{row, []byte("Name"), []byte("First"), []byte(fmt.Sprintf("first-%d", i)), nil},
-      gohbase.Cell{row, []byte("Id"), []byte("i"), []byte(fmt.Sprintf("id-%d", i)), nil},
+    cells := []gomaprtables.Cell{
+      gomaprtables.Cell{row, []byte("Name"), []byte("First"), []byte(fmt.Sprintf("first-%d", i)), nil},
+      gomaprtables.Cell{row, []byte("Id"), []byte("i"), []byte(fmt.Sprintf("id-%d", i)), nil},
     }
 
-    fmt.Printf("Put send [Id: %d]\n", i)
     if err := conn.Put(tableName, row, cells, cb); err != nil {
       return err
     }
@@ -88,7 +74,6 @@ func put(conn *gohbase.Conn, tableName string, numRows int) error {
     if result.Err != nil {
       return result.Err
     }
-    //fmt.Printf("Put Result [Id: X] %+v\n", result.Result)
     result.PrintAllResults()
   }
   return nil

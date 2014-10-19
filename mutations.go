@@ -1,4 +1,4 @@
-package gohbase
+package gomaprtables
 
 /*
 #include <stdlib.h>

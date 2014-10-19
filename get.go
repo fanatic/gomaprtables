@@ -1,12 +1,9 @@
-package gohbase
+package gomaprtables
 
-// #cgo CFLAGS: -I. -I/opt/mapr/include
-// #cgo LDFLAGS: -L/opt/mapr/lib -L/usr/lib/jvm/java-1.7.0/jre/lib/amd64/server -lMapRClient -ljvm
 /*
 #include <stdlib.h>
 #include <string.h>
 #include <hbase/hbase.h>
-#include <pthread.h>
 
 void get_send_cb(int32_t err, hb_client_t client, hb_get_t get, hb_result_t result, void *extra);
 */

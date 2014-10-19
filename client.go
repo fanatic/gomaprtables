@@ -1,10 +1,9 @@
-package gohbase
+package gomaprtables
 
 /*
 #include <stdlib.h>
 #include <string.h>
 #include <hbase/hbase.h>
-#include <pthread.h>
 
 void cl_dsc_cb(int32_t err, hb_client_t client, void *extra);
 */

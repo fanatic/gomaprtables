@@ -1,8 +1,7 @@
-package gohbase
+package gomaprtables
 
 /*
 #include <stdlib.h>
-#include <string.h>
 #include <hbase/hbase.h>
 
 void admin_dc_cb(int32_t err, hb_admin_t admin, void *extra);

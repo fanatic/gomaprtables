@@ -1,4 +1,4 @@
-package gohbase
+package gomaprtables
 
 // #cgo CFLAGS: -I. -I/opt/mapr/include
 // #cgo LDFLAGS: -L/opt/mapr/lib -L/usr/lib/jvm/java-1.7.0/jre/lib/amd64/server -lMapRClient -ljvm
@@ -113,22 +113,46 @@ func (conn *Conn) Put(tableName string, rowKey []byte, cells []Cell, cb chan Cal
   return nil
 }
 
-func (conn *Conn) Get(tableName string, rowKey []byte, cb chan CallbackResult) error {
+func (conn *Conn) Get(tableName string, rowKey []byte) (*Result, error) {
   if err := conn.EnsureClient(); err != nil {
-    return err
+    return nil, err
   }
+
+  cb := make(chan CallbackResult)
+
   if err := conn.c.Get(nil, tableName, rowKey, cb); err != nil {
-    return err
+    return nil, err
   }
-  return nil
+
+  result := <-cb
+  if result.Err != nil {
+    return nil, result.Err
+  }
+
+  return result.Results[0], nil
 }
 
-func (conn *Conn) Scan(tableName string, cb chan CallbackResult) error {
+func (conn *Conn) Scan(tableName string) ([]*Result, error) {
   if err := conn.EnsureClient(); err != nil {
-    return err
+    return nil, err
   }
+
+  cb := make(chan CallbackResult)
+
   if err := conn.c.Scan(nil, tableName, nil, nil, 1, cb); err != nil {
-    return err
+    return nil, err
   }
-  return nil
+
+  results := []*Result{}
+  for result := range cb {
+    if result.Err != nil {
+      return nil, result.Err
+    }
+    if len(result.Results) > 0 {
+      results = append(results, result.Results...)
+    } else {
+      break
+    }
+  }
+  return results, nil
 }
