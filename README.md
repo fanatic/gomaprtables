@@ -1,5 +1,7 @@
 # MapR Table Go Client
 
+[![GoDoc](https://godoc.org/github.com/fanatic/gomaprtables?status.svg)](https://godoc.org/github.com/fanatic/gomaprtables)
+
 MapR Tables is an implementation of the HBase API.  This client is an extension of https://github.com/mapr/libhbase which is an asyncronous HBase client with some MapR-specific exceptions (like CLDB nodes instead of Zookeeper nodes on connection).
 
 ## Compiling & Running
@@ -8,6 +10,10 @@ $ yum install mapr-client
 $ export LD_LIBRARY_PATH=/opt/mapr/lib:/usr/lib/jvm/java-1.7.0/jre/lib/amd64/server
 $ go build/run
 ```
+
+## Install
+
+    go get github.com/fanatic/gomaprtables
 
 ## Example App
 ```bash
