@@ -15,6 +15,8 @@ import "fmt"
 //Unimplemented: Get with filter
 //Unimplemented: Get timestamp
 //Unimplemented: Get with time range
+
+//Get queues a request to retrieve a row.  The result will be placed on the cb channel.
 func (cl *Client) Get(nameSpace *string, tableName string, rowKey []byte, cb chan CallbackResult) error {
   var get C.hb_get_t
   e := C.hb_get_create((*C.byte_t)(unsafe.Pointer(&rowKey[0])), (C.size_t)(len(rowKey)), &get)

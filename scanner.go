@@ -14,6 +14,8 @@ import "fmt"
 
 //Unimplemented: Scan with filter
 //Unimplemented: Scan with limit
+
+//Scan queues a request to retrieve multiple rows.  The result will be placed on the cb channel.
 func (cl *Client) Scan(nameSpace *string, tableName string, startRow, endRow []byte, numVersions int, cb chan CallbackResult) error {
   var scan C.hb_scanner_t
   e := C.hb_scanner_create(cl.client, &scan)

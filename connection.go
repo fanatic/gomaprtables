@@ -11,6 +11,7 @@ import "unsafe"
 import "fmt"
 import "strings"
 
+//Conn represents a connection to HBase/MapR
 type Conn struct {
   hb       C.hb_connection_t
   CLDBList []string
@@ -18,7 +19,7 @@ type Conn struct {
   c        *Client
 }
 
-// NewConn takes a list of CLDB servers "<server1[:port]>,..."
+// NewConn takes a list of CLDB servers "<server1[:port]>,..." and connects to HBase/MapR
 func NewConn(cldbs []string) (*Conn, error) {
   conn := Conn{}
   conn.CLDBList = cldbs
@@ -34,6 +35,7 @@ func NewConn(cldbs []string) (*Conn, error) {
   return &conn, nil
 }
 
+// Close cleans up all associated structures from the Connection
 func (c *Conn) Close() error {
   if c.a != nil {
     if err := c.a.Close(); err != nil {
@@ -53,7 +55,8 @@ func (c *Conn) Close() error {
 }
 
 // Helper functions
-func (conn *Conn) EnsureAdminClient() error {
+
+func (conn *Conn) ensureAdminClient() error {
   if conn.a == nil {
     var err error
     conn.a, err = conn.NewAdminClient()
@@ -64,8 +67,9 @@ func (conn *Conn) EnsureAdminClient() error {
   return nil
 }
 
+//CreateTable creates the given table, doing all the dirty work for you
 func (conn *Conn) CreateTable(tableName string, columnFamilies [][]byte, deleteIfExist bool) error {
-  if err := conn.EnsureAdminClient(); err != nil {
+  if err := conn.ensureAdminClient(); err != nil {
     return err
   }
 
@@ -92,7 +96,7 @@ func (conn *Conn) CreateTable(tableName string, columnFamilies [][]byte, deleteI
   return nil
 }
 
-func (conn *Conn) EnsureClient() error {
+func (conn *Conn) ensureClient() error {
   if conn.c == nil {
     var err error
     conn.c, err = conn.NewClient()
@@ -103,8 +107,9 @@ func (conn *Conn) EnsureClient() error {
   return nil
 }
 
+//Put adds a row to a table, doing all the dirty work for you
 func (conn *Conn) Put(tableName string, rowKey []byte, cells []Cell, cb chan CallbackResult) error {
-  if err := conn.EnsureClient(); err != nil {
+  if err := conn.ensureClient(); err != nil {
     return err
   }
   if err := conn.c.Put(nil, tableName, true, rowKey, cells, cb); err != nil {
@@ -113,8 +118,9 @@ func (conn *Conn) Put(tableName string, rowKey []byte, cells []Cell, cb chan Cal
   return nil
 }
 
+//Get retrieves a row from a table, doing all the dirty work for you
 func (conn *Conn) Get(tableName string, rowKey []byte) (*Result, error) {
-  if err := conn.EnsureClient(); err != nil {
+  if err := conn.ensureClient(); err != nil {
     return nil, err
   }
 
@@ -132,8 +138,9 @@ func (conn *Conn) Get(tableName string, rowKey []byte) (*Result, error) {
   return result.Results[0], nil
 }
 
+//Scan retrieves several rows from a table, doing all the dirty work for you
 func (conn *Conn) Scan(tableName string) ([]*Result, error) {
-  if err := conn.EnsureClient(); err != nil {
+  if err := conn.ensureClient(); err != nil {
     return nil, err
   }
 

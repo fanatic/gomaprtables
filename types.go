@@ -8,6 +8,8 @@ import "C"
 import "unsafe"
 import "time"
 
+//Cell represents a HBase cell - identified by a row, column family,
+//column qualifier, value, and timestamp
 type Cell struct {
   Row       []byte
   Family    []byte
@@ -16,6 +18,7 @@ type Cell struct {
   Timestamp *time.Time
 }
 
+//NewCell is used internally to create a Cell from the C object
 func NewCell(cCell *C.hb_cell_t) *Cell {
   c := Cell{
     Row:       C.GoBytes(unsafe.Pointer(cCell.row), C.int(cCell.row_len)),
@@ -28,6 +31,7 @@ func NewCell(cCell *C.hb_cell_t) *Cell {
   return &c
 }
 
+//CCell is used internally to create a C object from a Cell
 func (c Cell) CCell() *C.hb_cell_t {
   cellPtr := C.hb_cell_t{}
 

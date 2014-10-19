@@ -8,6 +8,7 @@ import "C"
 import "unsafe"
 import "fmt"
 
+//Result represents a HBase response
 type Result struct {
   TableName string
   NameSpace *string
@@ -17,6 +18,7 @@ type Result struct {
   hb_result C.hb_result_t
 }
 
+//NewResult is used internally to create a Result from the C object
 func NewResult(result C.hb_result_t) *Result {
   if result == nil {
     return nil
@@ -62,6 +64,7 @@ func NewResult(result C.hb_result_t) *Result {
   return &r
 }
 
+//PrintResult prints out the result representation to stdout
 func (r *Result) PrintResult() {
   if r != nil {
     fmt.Printf("  Table: %s  NameSpace: %v CellCount: %d RowKey: %q\n", r.TableName, r.NameSpace, r.NumCells, string(r.RowKey))

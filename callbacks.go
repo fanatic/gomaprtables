@@ -37,11 +37,13 @@ void sn_destroy_cb(int32_t err, hb_scanner_t scanner, void *extra)
 */
 import "C"
 
+//CallbackResult represents a callback Result and Error
 type CallbackResult struct {
   Results []*Result
   Err     error
 }
 
+//PrintAllResults calls PrintResult for each result
 func (r *CallbackResult) PrintAllResults() {
   for _, r := range r.Results {
     r.PrintResult()

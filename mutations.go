@@ -12,6 +12,8 @@ import "C"
 import "unsafe"
 
 //Unimplemented: durability,
+
+//Put queues a request to insert a row.  The result will be placed on the cb channel.
 func (cl *Client) Put(nameSpace *string, tableName string, bufferable bool, rowKey []byte, cells []Cell, cb chan CallbackResult) error {
   var put C.hb_put_t
 

@@ -8,10 +8,12 @@ package gomaprtables
 import "C"
 import "unsafe"
 
+//ColDesc represents a column family descriptor
 type ColDesc struct {
   colDesc C.hb_columndesc
 }
 
+//NewColDesc creates a column family descriptor
 func NewColDesc(family []byte) (*ColDesc, error) {
   cd := ColDesc{}
 
@@ -24,6 +26,7 @@ func NewColDesc(family []byte) (*ColDesc, error) {
   return &cd, nil
 }
 
+//C returns a C-representation of a column descriptor for internal use
 func (cd *ColDesc) C() C.hb_columndesc {
   return cd.colDesc
 }

@@ -9,11 +9,13 @@ void admin_dc_cb(int32_t err, hb_admin_t admin, void *extra);
 import "C"
 import "unsafe"
 
+// AdminClient represents a client for manipulating tables
 type AdminClient struct {
   admin C.hb_admin_t
   errCB chan C.int32_t
 }
 
+// NewAdminClient returns an AdminClient
 func (c *Conn) NewAdminClient() (*AdminClient, error) {
   a := AdminClient{}
   e := C.hb_admin_create(c.hb, &a.admin)
@@ -24,6 +26,7 @@ func (c *Conn) NewAdminClient() (*AdminClient, error) {
   return &a, nil
 }
 
+// Close cleans up all associated structures from AdminClient and waits before returning
 func (a *AdminClient) Close() error {
   e := C.hb_admin_destroy(a.admin, (C.hb_admin_disconnection_cb)(C.admin_dc_cb), (unsafe.Pointer)(&a.errCB))
   if e != 0 {
@@ -42,6 +45,7 @@ func adminCloseCallback(err C.int32_t, admin C.hb_admin_t, extra unsafe.Pointer)
   *((*chan C.int32_t)(extra)) <- err
 }
 
+//IsTableExist checks if a table exists.  Returns nil if table exists.
 func (a *AdminClient) IsTableExist(nameSpace *string, tableName string) error {
   var ns *C.char
   if nameSpace != nil {
@@ -62,6 +66,7 @@ func (a *AdminClient) IsTableExist(nameSpace *string, tableName string) error {
 // Unimplemented: table disable
 // Unimplemented: table enable
 
+// CreateTable creates an HBase table
 func (a *AdminClient) CreateTable(nameSpace *string, tableName string, families []*ColDesc) error {
   var ns *C.char
   if nameSpace != nil {
@@ -84,6 +89,7 @@ func (a *AdminClient) CreateTable(nameSpace *string, tableName string, families 
   return nil
 }
 
+// DeleteTable deletes an HBase table, and disables the table if not already disabled
 func (a *AdminClient) DeleteTable(nameSpace *string, tableName string) error {
   var ns *C.char
   if nameSpace != nil {
