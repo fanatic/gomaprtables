@@ -8,14 +8,7 @@ package gohbase
 #include <hbase/hbase.h>
 #include <pthread.h>
 
-// Get callback
-void get_send_cb(int32_t err, hb_client_t client, hb_get_t get, hb_result_t result, void *extra)
-{
-  printf("  get_send_cb: err=%d\n", err);
-  read_result(result);
-  hb_get_destroy(get);
-}
-
+void get_send_cb(int32_t err, hb_client_t client, hb_get_t get, hb_result_t result, void *extra);
 */
 import "C"
 import "unsafe"
@@ -25,7 +18,7 @@ import "fmt"
 //Unimplemented: Get with filter
 //Unimplemented: Get timestamp
 //Unimplemented: Get with time range
-func (cl *Client) Get(nameSpace *string, tableName string, rowKey []byte) error {
+func (cl *Client) Get(nameSpace *string, tableName string, rowKey []byte, cb chan CallbackResult) error {
   var get C.hb_get_t
   e := C.hb_get_create((*C.byte_t)(unsafe.Pointer(&rowKey[0])), (C.size_t)(len(rowKey)), &get)
   if e != 0 {
@@ -50,10 +43,21 @@ func (cl *Client) Get(nameSpace *string, tableName string, rowKey []byte) error 
     return Errno(e)
   }
 
-  e = C.hb_get_send(cl.client, get, (C.hb_get_cb)(C.get_send_cb), nil)
+  e = C.hb_get_send(cl.client, get, (C.hb_get_cb)(C.get_send_cb), (unsafe.Pointer)(&cb))
   if e != 0 {
     fmt.Printf("get_send: %d\n", e)
     return Errno(e)
   }
   return nil
+}
+
+//export getCallback
+func getCallback(e C.int32_t, client C.hb_client_t, get C.hb_get_t, result C.hb_result_t, extra unsafe.Pointer) {
+  var err error
+  if e != 0 {
+    err = Errno(e)
+  }
+
+  C.hb_get_destroy(get)
+  *((*chan CallbackResult)(extra)) <- CallbackResult{[]*Result{NewResult(result)}, err}
 }

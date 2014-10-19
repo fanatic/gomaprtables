@@ -103,40 +103,31 @@ func (conn *Conn) EnsureClient() error {
   return nil
 }
 
-func (conn *Conn) Put(tableName string, rowKey []byte, cells []Cell) error {
+func (conn *Conn) Put(tableName string, rowKey []byte, cells []Cell, cb chan CallbackResult) error {
   if err := conn.EnsureClient(); err != nil {
     return err
   }
-  if err := conn.c.Put(nil, tableName, true, rowKey, cells); err != nil {
-    return err
-  }
-  /*for locCount :=0;; {
-    time.Sleep(1 * time.Second)
-    C.pthread_mutex_lock(&C.put_mut)
-    locCount = int(C.count)
-    C.pthread_mutex_unlock(&C.put_mut)
-    if locCount < numRows {
-      break;
-    }
-  }*/
-  return nil
-}
-
-func (conn *Conn) Get(tableName string, rowKey []byte) error {
-  if err := conn.EnsureClient(); err != nil {
-    return err
-  }
-  if err := conn.c.Get(nil, tableName, rowKey); err != nil {
+  if err := conn.c.Put(nil, tableName, true, rowKey, cells, cb); err != nil {
     return err
   }
   return nil
 }
 
-func (conn *Conn) Scan(tableName string) error {
+func (conn *Conn) Get(tableName string, rowKey []byte, cb chan CallbackResult) error {
   if err := conn.EnsureClient(); err != nil {
     return err
   }
-  if err := conn.c.Scan(nil, tableName, nil, nil, 1); err != nil {
+  if err := conn.c.Get(nil, tableName, rowKey, cb); err != nil {
+    return err
+  }
+  return nil
+}
+
+func (conn *Conn) Scan(tableName string, cb chan CallbackResult) error {
+  if err := conn.EnsureClient(); err != nil {
+    return err
+  }
+  if err := conn.c.Scan(nil, tableName, nil, nil, 1, cb); err != nil {
     return err
   }
   return nil

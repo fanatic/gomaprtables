@@ -4,22 +4,9 @@ package gohbase
 #include <stdlib.h>
 #include <string.h>
 #include <hbase/hbase.h>
-#include <pthread.h>
 
-// Scan callback
-void sn_cb(int32_t err, hb_scanner_t scan, hb_result_t *results, size_t numResults, void *extra)
-{
-  printf("  -> Scanner next callback()\n");
-  printf("  -> CB: err: %d, numResults: %d\n", err, (int)numResults);
-
-  if (numResults > 0) {
-		uint32_t r;
-    for (r = 0; r < numResults; ++r) {
-      read_result(results[r]);
-    }
-    hb_scanner_next(scan, sn_cb, NULL);
-  }
-}
+void sn_cb(int32_t err, hb_scanner_t scan, hb_result_t *results, size_t numResults, void *extra);
+void sn_destroy_cb(int32_t err, hb_scanner_t scanner, void *extra);
 */
 import "C"
 import "unsafe"
@@ -27,7 +14,7 @@ import "fmt"
 
 //Unimplemented: Scan with filter
 //Unimplemented: Scan with limit
-func (cl *Client) Scan(nameSpace *string, tableName string, startRow, endRow []byte, numVersions int) error {
+func (cl *Client) Scan(nameSpace *string, tableName string, startRow, endRow []byte, numVersions int, cb chan CallbackResult) error {
   var scan C.hb_scanner_t
   e := C.hb_scanner_create(cl.client, &scan)
   if e != 0 {
@@ -64,14 +51,58 @@ func (cl *Client) Scan(nameSpace *string, tableName string, startRow, endRow []b
     }
   }
 
+  e = C.hb_scanner_set_num_max_rows(scan, 1)
+  if e != 0 {
+    return Errno(e)
+  }
+
   e = C.hb_scanner_set_num_versions(scan, (C.int8_t)(numVersions))
   if e != 0 {
     return Errno(e)
   }
 
-  e = C.hb_scanner_next(scan, (C.hb_scanner_cb)(C.sn_cb), nil)
+  e = C.hb_scanner_next(scan, (C.hb_scanner_cb)(C.sn_cb), (unsafe.Pointer)(&cb))
   if e != 0 {
     return Errno(e)
   }
   return nil
+}
+
+//export scanNextCallback
+func scanNextCallback(e C.int32_t, scan C.hb_scanner_t, results *C.hb_result_t, numResults C.size_t, extra unsafe.Pointer) {
+  var err error
+  if e != 0 {
+    err = Errno(e)
+  }
+
+  resultSet := make([]*Result, 0, int(numResults))
+  cb := *((*chan CallbackResult)(extra))
+
+  if numResults > 0 {
+
+    cResults := (*[1 << 30]C.hb_result_t)(unsafe.Pointer(results))[:numResults:numResults]
+    for _, cResult := range cResults {
+      resultSet = append(resultSet, NewResult(cResult))
+    }
+
+    e = C.hb_scanner_next(scan, (C.hb_scanner_cb)(C.sn_cb), (unsafe.Pointer)(&cb))
+    if e != 0 {
+      err = Errno(e)
+    }
+  } else {
+    errCB := make(chan C.int32_t)
+    C.hb_scanner_destroy(scan, (C.hb_scanner_destroy_cb)(C.sn_destroy_cb), (unsafe.Pointer)(&errCB))
+    // Wait around for the callback
+    e = <-errCB
+    if e != 0 {
+      err = Errno(e)
+    }
+  }
+
+  cb <- CallbackResult{resultSet, err}
+}
+
+//export scanDestroyCallback
+func scanDestroyCallback(err C.int32_t, scan C.hb_scanner_t, extra unsafe.Pointer) {
+  *((*chan C.int32_t)(extra)) <- err
 }

@@ -5,17 +5,14 @@ package gohbase
 #include <string.h>
 #include <hbase/hbase.h>
 
-// Admin dc callback
-void admin_dc_cb(int32_t err, hb_admin_t admin, void *extra)
-{
-  printf("admin_dc_cb: err = %d\n", err);
-}
+void admin_dc_cb(int32_t err, hb_admin_t admin, void *extra);
 */
 import "C"
 import "unsafe"
 
 type AdminClient struct {
   admin C.hb_admin_t
+  errCB chan C.int32_t
 }
 
 func (c *Conn) NewAdminClient() (*AdminClient, error) {
@@ -24,19 +21,27 @@ func (c *Conn) NewAdminClient() (*AdminClient, error) {
   if e != 0 {
     return nil, Errno(e)
   }
+  a.errCB = make(chan C.int32_t)
   return &a, nil
 }
 
 func (a *AdminClient) Close() error {
-  e := C.hb_admin_destroy(a.admin, (C.hb_admin_disconnection_cb)(C.admin_dc_cb), nil)
+  e := C.hb_admin_destroy(a.admin, (C.hb_admin_disconnection_cb)(C.admin_dc_cb), (unsafe.Pointer)(&a.errCB))
+  if e != 0 {
+    return Errno(e)
+  }
+  // Wait around for the callback
+  e = <-a.errCB
   if e != 0 {
     return Errno(e)
   }
   return nil
 }
 
-// Unimplemented: Callback in golang
-// https://code.google.com/p/go-wiki/wiki/cgo
+//export adminCloseCallback
+func adminCloseCallback(err C.int32_t, admin C.hb_admin_t, extra unsafe.Pointer) {
+  *((*chan C.int32_t)(extra)) <- err
+}
 
 func (a *AdminClient) IsTableExist(nameSpace *string, tableName string) error {
   var ns *C.char

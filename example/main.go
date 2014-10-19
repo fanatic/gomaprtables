@@ -3,48 +3,72 @@ package main
 import (
   "fmt"
   "github.com/fanatic/gohbase"
-  "time"
 )
 
 func main() {
+  // Connect!
   conn, err := gohbase.NewConn([]string{"192.168.2.107"})
   if err != nil {
     fmt.Printf("Connection error: %v\n", err)
     return
   }
 
+  // Create Table (replace if exists)!
   colFamilies := [][]byte{[]byte("Id"), []byte("Name"), []byte("Family3")}
   if err := conn.CreateTable("/tables/jptest", colFamilies, true); err != nil {
     fmt.Printf("createTable: %v\n", err)
     return
   }
 
+  // Put 10 Rows!
   err = put(conn, "/tables/jptest", 10)
   if err != nil {
     fmt.Printf("put: %v\n", err)
     return
   }
 
-  err = conn.Get("/tables/jptest", []byte("row-1"))
+  // Get 1st Row!
+  cb := make(chan gohbase.CallbackResult)
+  err = conn.Get("/tables/jptest", []byte("row-1"), cb)
   if err != nil {
     fmt.Printf("get: %v\n", err)
     return
   }
-  time.Sleep(3 * time.Second)
+  result := <-cb
+  if result.Err != nil {
+    fmt.Printf("get: %v\n", result.Err)
+    return
+  }
+  result.PrintAllResults()
 
-  err = conn.Scan("/tables/jptest")
+  // Get All Rows!
+  cb2 := make(chan gohbase.CallbackResult)
+  err = conn.Scan("/tables/jptest", cb2)
   if err != nil {
     fmt.Printf("scan: %v\n", err)
     return
   }
-  time.Sleep(3 * time.Second)
+  for result := range cb2 {
+    if result.Err != nil {
+      fmt.Printf("scan: %v\n", result.Err)
+      return
+    }
+    if len(result.Results) > 0 {
+      result.PrintAllResults()
+    } else {
+      break
+    }
+  }
 
+  // Clean up!
   if err := conn.Close(); err != nil {
     fmt.Printf("close connection: %v\n", err)
   }
 }
 
 func put(conn *gohbase.Conn, tableName string, numRows int) error {
+  cb := make(chan gohbase.CallbackResult)
+
   for i := 0; i < numRows; i++ {
     row := []byte(fmt.Sprintf("row-%d", i))
 
@@ -54,10 +78,18 @@ func put(conn *gohbase.Conn, tableName string, numRows int) error {
     }
 
     fmt.Printf("Put send [Id: %d]\n", i)
-    if err := conn.Put(tableName, row, cells); err != nil {
+    if err := conn.Put(tableName, row, cells, cb); err != nil {
       return err
     }
   }
-  time.Sleep(3 * time.Second)
+
+  for i := 0; i < numRows; i++ {
+    result := <-cb
+    if result.Err != nil {
+      return result.Err
+    }
+    //fmt.Printf("Put Result [Id: X] %+v\n", result.Result)
+    result.PrintAllResults()
+  }
   return nil
 }
