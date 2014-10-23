@@ -16,7 +16,7 @@ import "fmt"
 //Unimplemented: Scan with limit
 
 //Scan queues a request to retrieve multiple rows.  The result will be placed on the cb channel.
-func (cl *Client) Scan(nameSpace *string, tableName string, startRow, endRow []byte, numVersions int, cb chan CallbackResult) error {
+func (cl *Client) Scan(nameSpace *string, tableName string, startRow, endRow []byte, numVersions int, cb *chan CallbackResult) error {
   var scan C.hb_scanner_t
   e := C.hb_scanner_create(cl.client, &scan)
   if e != 0 {
@@ -25,7 +25,6 @@ func (cl *Client) Scan(nameSpace *string, tableName string, startRow, endRow []b
 
   if nameSpace != nil {
     ns := C.CString(*nameSpace)
-    defer C.free(unsafe.Pointer(ns))
     e = C.hb_scanner_set_namespace(scan, ns, C.strlen(ns))
     if e != 0 {
       return Errno(e)
@@ -33,7 +32,6 @@ func (cl *Client) Scan(nameSpace *string, tableName string, startRow, endRow []b
   }
 
   tn := C.CString(tableName)
-  defer C.free(unsafe.Pointer(tn))
   e = C.hb_scanner_set_table(scan, tn, C.strlen(tn))
   if e != 0 {
     fmt.Printf("set_table: %d\n", e)
@@ -63,7 +61,7 @@ func (cl *Client) Scan(nameSpace *string, tableName string, startRow, endRow []b
     return Errno(e)
   }
 
-  e = C.hb_scanner_next(scan, (C.hb_scanner_cb)(C.sn_cb), (unsafe.Pointer)(&cb))
+  e = C.hb_scanner_next(scan, (C.hb_scanner_cb)(C.sn_cb), (unsafe.Pointer)(cb))
   if e != 0 {
     return Errno(e)
   }
@@ -78,7 +76,7 @@ func scanNextCallback(e C.int32_t, scan C.hb_scanner_t, results *C.hb_result_t, 
   }
 
   resultSet := make([]*Result, 0, int(numResults))
-  cb := *((*chan CallbackResult)(extra))
+  cb := (*chan CallbackResult)(extra)
 
   if numResults > 0 {
 
@@ -87,7 +85,7 @@ func scanNextCallback(e C.int32_t, scan C.hb_scanner_t, results *C.hb_result_t, 
       resultSet = append(resultSet, newResult(cResult))
     }
 
-    e = C.hb_scanner_next(scan, (C.hb_scanner_cb)(C.sn_cb), (unsafe.Pointer)(&cb))
+    e = C.hb_scanner_next(scan, (C.hb_scanner_cb)(C.sn_cb), (unsafe.Pointer)(cb))
     if e != 0 {
       err = Errno(e)
     }
@@ -101,7 +99,7 @@ func scanNextCallback(e C.int32_t, scan C.hb_scanner_t, results *C.hb_result_t, 
     }
   }
 
-  cb <- CallbackResult{resultSet, err}
+  *cb <- CallbackResult{resultSet, err}
 }
 
 //export scanDestroyCallback

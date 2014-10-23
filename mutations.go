@@ -14,7 +14,7 @@ import "unsafe"
 //Unimplemented: durability,
 
 //Put queues a request to insert a row.  The result will be placed on the cb channel.
-func (cl *Client) Put(nameSpace *string, tableName string, bufferable bool, rowKey []byte, cells []Cell, cb chan CallbackResult) error {
+func (cl *Client) Put(nameSpace *string, tableName string, bufferable bool, rowKey []byte, cells []Cell, cb *chan CallbackResult) error {
   var put C.hb_put_t
 
   e := C.hb_put_create((*C.byte_t)(unsafe.Pointer(&rowKey[0])), (C.size_t)(len(rowKey)), &put)
@@ -24,7 +24,6 @@ func (cl *Client) Put(nameSpace *string, tableName string, bufferable bool, rowK
 
   if nameSpace != nil {
     ns := C.CString(*nameSpace)
-    defer C.free(unsafe.Pointer(ns))
     e = C.hb_mutation_set_namespace((C.hb_mutation_t)(put), ns, C.strlen(ns))
     if e != 0 {
       return Errno(e)
@@ -32,7 +31,6 @@ func (cl *Client) Put(nameSpace *string, tableName string, bufferable bool, rowK
   }
 
   tn := C.CString(tableName)
-  defer C.free(unsafe.Pointer(tn))
   e = C.hb_mutation_set_table((C.hb_mutation_t)(put), tn, C.strlen(tn))
   if e != 0 {
     return Errno(e)
@@ -50,7 +48,7 @@ func (cl *Client) Put(nameSpace *string, tableName string, bufferable bool, rowK
     }
   }
 
-  e = C.hb_mutation_send(cl.client, (C.hb_mutation_t)(put), (C.hb_mutation_cb)(C.put_cb), (unsafe.Pointer)(&cb))
+  e = C.hb_mutation_send(cl.client, (C.hb_mutation_t)(put), (C.hb_mutation_cb)(C.put_cb), (unsafe.Pointer)(cb))
   if e != 0 {
     return Errno(e)
   }
@@ -64,8 +62,9 @@ func putCallback(e C.int32_t, client C.hb_client_t, mutation C.hb_mutation_t, re
     err = Errno(e)
   }
 
+  cb := (*chan CallbackResult)(extra)
+  *cb <- CallbackResult{[]*Result{newResult(result)}, err}
   C.hb_mutation_destroy(mutation)
-  *((*chan CallbackResult)(extra)) <- CallbackResult{[]*Result{newResult(result)}, err}
 }
 
 //Unimplemented: delete

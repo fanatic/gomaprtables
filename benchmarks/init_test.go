@@ -3,17 +3,28 @@ package benchmarks
 import (
   "fmt"
   "github.com/fanatic/gomaprtables"
+  "os"
+  "strings"
 )
 
 var conn *gomaprtables.Connection
 
-const tableName = "/tables/jptest"
+var tableName string
 
 func init() {
   var err error
 
+  tableName = "/tables/jptest"
+  if os.Getenv("TABLENAME") != "" {
+    tableName = os.Getenv("TABLENAME")
+  }
+  cldbs := "192.168.2.107"
+  if os.Getenv("CLDBS") != "" {
+    cldbs = os.Getenv("CLDBS")
+  }
+
   // Connect
-  conn, err = gomaprtables.NewConnection([]string{"192.168.2.107"})
+  conn, err = gomaprtables.NewConnection(strings.Split(cldbs, ","))
   if err != nil {
     fmt.Printf("Connection error: %v\n", err)
     return

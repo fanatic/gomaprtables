@@ -7,7 +7,7 @@ package gomaprtables
 #include <hbase/hbase.h>
 */
 import "C"
-import "unsafe"
+//import "unsafe"
 import "fmt"
 import "strings"
 
@@ -25,7 +25,6 @@ func NewConnection(cldbs []string) (*Connection, error) {
   conn.CLDBList = cldbs
 
   cs := C.CString(strings.Join(cldbs, ","))
-  defer C.free(unsafe.Pointer(cs))
 
   e := C.hb_connection_create(cs, nil, &conn.hb)
   if e != 0 {
@@ -108,7 +107,7 @@ func (conn *Connection) ensureClient() error {
 }
 
 //Put adds a row to a table, doing all the dirty work for you
-func (conn *Connection) Put(tableName string, rowKey []byte, cells []Cell, cb chan CallbackResult) error {
+func (conn *Connection) Put(tableName string, rowKey []byte, cells []Cell, cb *chan CallbackResult) error {
   if err := conn.ensureClient(); err != nil {
     return err
   }
@@ -126,7 +125,7 @@ func (conn *Connection) Get(tableName string, rowKey []byte) (*Result, error) {
 
   cb := make(chan CallbackResult)
 
-  if err := conn.c.Get(nil, tableName, rowKey, cb); err != nil {
+  if err := conn.c.Get(nil, tableName, rowKey, &cb); err != nil {
     return nil, err
   }
 
@@ -146,7 +145,7 @@ func (conn *Connection) Scan(tableName string) ([]*Result, error) {
 
   cb := make(chan CallbackResult)
 
-  if err := conn.c.Scan(nil, tableName, nil, nil, 1, cb); err != nil {
+  if err := conn.c.Scan(nil, tableName, nil, nil, 1, &cb); err != nil {
     return nil, err
   }
 

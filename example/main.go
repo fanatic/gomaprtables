@@ -3,13 +3,24 @@ package main
 import (
   "fmt"
   "github.com/fanatic/gomaprtables"
+  "os"
+  "strings"
 )
 
-const tableName = "/tables/jptest"
+var tableName string
 
 func main() {
+  tableName = "/tables/jptest"
+  if os.Getenv("TABLENAME") != "" {
+    tableName = os.Getenv("TABLENAME")
+  }
+  cldbs := "192.168.2.107"
+  if os.Getenv("CLDBS") != "" {
+    cldbs = os.Getenv("CLDBS")
+  }
+
   // Connect!
-  conn, err := gomaprtables.NewConnection([]string{"192.168.2.107"})
+  conn, err := gomaprtables.NewConnection(strings.Split(cldbs, ","))
   if err != nil {
     fmt.Printf("Connection error: %v\n", err)
     return
@@ -64,7 +75,7 @@ func put(conn *gomaprtables.Connection, tableName string, numRows int) error {
       gomaprtables.Cell{row, []byte("Id"), []byte("i"), []byte(fmt.Sprintf("id-%d", i)), nil},
     }
 
-    if err := conn.Put(tableName, row, cells, cb); err != nil {
+    if err := conn.Put(tableName, row, cells, &cb); err != nil {
       return err
     }
   }

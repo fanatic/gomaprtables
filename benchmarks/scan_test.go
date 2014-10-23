@@ -1,5 +1,6 @@
 package benchmarks
 
+/*
 import (
   "testing"
 )
@@ -9,3 +10,4 @@ func BenchmarkScan100000(b *testing.B) {
     conn.Scan(tableName)
   }
 }
+*/
