@@ -12,7 +12,6 @@ import "unsafe"
 // AdminClient represents a client for manipulating tables
 type AdminClient struct {
   admin C.hb_admin_t
-  errCB chan C.int32_t
 }
 
 // NewAdminClient returns an AdminClient
@@ -22,7 +21,6 @@ func (conn *Connection) NewAdminClient() (*AdminClient, error) {
   if e != 0 {
     return nil, Errno(e)
   }
-  a.errCB = make(chan C.int32_t)
   return &a, nil
 }
 
@@ -153,12 +151,13 @@ func (a *AdminClient) DeleteTable(nameSpace *string, tableName string) error {
 
 // Close cleans up all associated structures from AdminClient and waits before returning
 func (a *AdminClient) Close() error {
-  e := C.hb_admin_destroy(a.admin, (C.hb_admin_disconnection_cb)(C.admin_dc_cb), (unsafe.Pointer)(&a.errCB))
+  errCB := make(chan C.int32_t)
+  e := C.hb_admin_destroy(a.admin, (C.hb_admin_disconnection_cb)(C.admin_dc_cb), (unsafe.Pointer)(&errCB))
   if e != 0 {
     return Errno(e)
   }
   // Wait around for the callback
-  e = <-a.errCB
+  e = <-errCB
   if e != 0 {
     return Errno(e)
   }

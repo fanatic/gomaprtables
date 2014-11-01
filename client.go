@@ -10,11 +10,11 @@ void cl_flush_cb(int32_t err, hb_client_t client, void *extra);
 */
 import "C"
 import "unsafe"
+import "fmt"
 
 // Client represents a client for manipulating rows and cells within a table
 type Client struct {
   client C.hb_client_t
-  errCB  chan C.int32_t
 }
 
 // NewClient returns a Client
@@ -24,12 +24,12 @@ func (conn *Connection) NewClient() (*Client, error) {
   if e != 0 {
     return nil, Errno(e)
   }
-  cl.errCB = make(chan C.int32_t)
   return &cl, nil
 }
 
 //export clientFlushCallback
 func clientFlushCallback(err C.int32_t, client C.hb_client_t, extra unsafe.Pointer) {
+  fmt.Printf("Flush callback entered\n")
   *((*chan C.int32_t)(extra)) <- err
 }
 
@@ -37,15 +37,19 @@ func clientFlushCallback(err C.int32_t, client C.hb_client_t, extra unsafe.Point
 // that has been buffered at the time of the call has been flushed.
 // Note: This doesn't guarantee that ALL outstanding RPCs have completed
 func (cl *Client) Flush() error {
-  e := C.hb_client_flush(cl.client, (C.hb_client_flush_cb)(C.cl_flush_cb), (unsafe.Pointer)(&cl.errCB))
+  errCB := make(chan C.int32_t)
+  fmt.Printf("About to flush\n")
+  e := C.hb_client_flush(cl.client, (C.hb_client_flush_cb)(C.cl_flush_cb), (unsafe.Pointer)(&errCB))
   if e != 0 {
     return Errno(e)
   }
+  fmt.Printf("Flush requested\n")
   // Wait around for the callback
-  e = <-cl.errCB
+  e = <-errCB
   if e != 0 {
     return Errno(e)
   }
+  fmt.Printf("Flush complete\n")
   return nil
 }
 
@@ -56,12 +60,13 @@ func clientCloseCallback(err C.int32_t, client C.hb_client_t, extra unsafe.Point
 
 // Close cleans up all associated structures from Client and waits before returning
 func (cl *Client) Close() error {
-  e := C.hb_client_destroy(cl.client, (C.hb_client_disconnection_cb)(C.cl_dsc_cb), (unsafe.Pointer)(&cl.errCB))
+  errCB := make(chan C.int32_t)
+  e := C.hb_client_destroy(cl.client, (C.hb_client_disconnection_cb)(C.cl_dsc_cb), (unsafe.Pointer)(&errCB))
   if e != 0 {
     return Errno(e)
   }
   // Wait around for the callback
-  e = <-cl.errCB
+  e = <-errCB
   if e != 0 {
     return Errno(e)
   }

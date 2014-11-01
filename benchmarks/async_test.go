@@ -12,7 +12,7 @@ func benchmarkScan(numRows, rowSize int, b *testing.B) {
     start := fmt.Sprintf("row-%d", rowSize)
     end := fmt.Sprintf("row-%d", rowSize+1)
     cb := make(chan gomaprtables.CallbackResult)
-    if err := client.Scan(nil, tableName, []byte(start), []byte(end), 1, &cb); err != nil {
+    if err := client.Scan(nil, tableName, []byte(start), []byte(end), nil, nil, nil, &cb); err != nil {
       fmt.Printf("Error: %v\n", err)
     }
     count := 0
