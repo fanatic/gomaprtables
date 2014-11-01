@@ -10,7 +10,7 @@ void cl_dsc_cb(int32_t err, hb_client_t client, void *extra);
 import "C"
 import "unsafe"
 
-// AdminClient represents a client for manipulating rows and cells within a table
+// Client represents a client for manipulating rows and cells within a table
 type Client struct {
   client C.hb_client_t
   errCB  chan C.int32_t
