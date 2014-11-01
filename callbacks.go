@@ -4,9 +4,16 @@ package gomaprtables
 #include <stdlib.h>
 #include <hbase/hbase.h>
 
+// HBase API Callbacks
+
 void admin_dc_cb(int32_t err, hb_admin_t admin, void *extra)
 {
 	adminCloseCallback(err, admin, extra);
+}
+
+void cl_flush_cb(int32_t err, hb_client_t client, void *extra)
+{
+  clientFlushCallback(err, client, extra);
 }
 
 void cl_dsc_cb(int32_t err, hb_client_t client, void *extra)
@@ -14,10 +21,10 @@ void cl_dsc_cb(int32_t err, hb_client_t client, void *extra)
 	clientCloseCallback(err, client, extra);
 }
 
-void put_cb(int err, hb_client_t client, hb_mutation_t mutation,
+void mutation_cb(int err, hb_client_t client, hb_mutation_t mutation,
             hb_result_t result, void *extra)
 {
-	putCallback(err, client, mutation, result, extra);
+	mutationCallback(err, client, mutation, result, extra);
 }
 
 void get_send_cb(int32_t err, hb_client_t client, hb_get_t get, hb_result_t result, void *extra)

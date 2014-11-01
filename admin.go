@@ -49,8 +49,62 @@ func (a *AdminClient) IsTableExist(nameSpace *string, tableName string) error {
   return nil
 }
 
-// Unimplemented: table disable
-// Unimplemented: table enable
+//IsTableEnabled checks if a table is enabled.  Returns true if table is enabled.
+func (a *AdminClient) IsTableEnabled(nameSpace *string, tableName string) (bool, error) {
+  var ns *C.char
+  if nameSpace != nil {
+    ns = C.CString(*nameSpace)
+    defer C.free(unsafe.Pointer(ns))
+  }
+
+  tn := C.CString(tableName)
+  defer C.free(unsafe.Pointer(tn))
+
+  e := C.hb_admin_table_enabled(a.admin, ns, tn)
+  if e != 0 {
+    if e == C.HBASE_TABLE_DISABLED {
+      return false, nil
+    }
+    return false, Errno(e)
+  }
+  return true, nil
+}
+
+// DisableTable disables an HBase table
+func (a *AdminClient) DisableTable(nameSpace *string, tableName string) error {
+  var ns *C.char
+  if nameSpace != nil {
+    ns = C.CString(*nameSpace)
+    defer C.free(unsafe.Pointer(ns))
+  }
+
+  tn := C.CString(tableName)
+  defer C.free(unsafe.Pointer(tn))
+
+  e := C.hb_admin_table_disable(a.admin, ns, tn)
+  if e != 0 {
+    return Errno(e)
+  }
+  return nil
+}
+
+// EnableTable enables an HBase table
+func (a *AdminClient) EnableTable(nameSpace *string, tableName string) error {
+  var ns *C.char
+  if nameSpace != nil {
+    ns = C.CString(*nameSpace)
+    defer C.free(unsafe.Pointer(ns))
+  }
+
+  tn := C.CString(tableName)
+  defer C.free(unsafe.Pointer(tn))
+
+  e := C.hb_admin_table_enable(a.admin, ns, tn)
+  if e != 0 {
+    return Errno(e)
+  }
+  return nil
+}
 
 // CreateTable creates an HBase table
 func (a *AdminClient) CreateTable(nameSpace *string, tableName string, families []*ColDesc) error {
@@ -65,7 +119,11 @@ func (a *AdminClient) CreateTable(nameSpace *string, tableName string, families 
 
   cFamilies := make([]C.hb_columndesc, len(families))
   for i, fam := range families {
-    cFamilies[i] = fam.c()
+    var err error
+    cFamilies[i], err = fam.c()
+    if err != nil {
+      return err
+    }
   }
 
   e := C.hb_admin_table_create(a.admin, ns, tn, (*C.hb_columndesc)(unsafe.Pointer(&cFamilies[0])), C.size_t(len(families)))

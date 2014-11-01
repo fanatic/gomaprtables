@@ -6,6 +6,7 @@ package gomaprtables
 #include <hbase/hbase.h>
 
 void cl_dsc_cb(int32_t err, hb_client_t client, void *extra);
+void cl_flush_cb(int32_t err, hb_client_t client, void *extra);
 */
 import "C"
 import "unsafe"
@@ -27,12 +28,31 @@ func (conn *Connection) NewClient() (*Client, error) {
   return &cl, nil
 }
 
+//export clientFlushCallback
+func clientFlushCallback(err C.int32_t, client C.hb_client_t, extra unsafe.Pointer) {
+  *((*chan C.int32_t)(extra)) <- err
+}
+
+// Flush any buffered client-side write operations to HBase.  Waits until everything
+// that has been buffered at the time of the call has been flushed.
+// Note: This doesn't guarantee that ALL outstanding RPCs have completed
+func (cl *Client) Flush() error {
+  e := C.hb_client_flush(cl.client, (C.hb_client_flush_cb)(C.cl_flush_cb), (unsafe.Pointer)(&cl.errCB))
+  if e != 0 {
+    return Errno(e)
+  }
+  // Wait around for the callback
+  e = <-cl.errCB
+  if e != 0 {
+    return Errno(e)
+  }
+  return nil
+}
+
 //export clientCloseCallback
 func clientCloseCallback(err C.int32_t, client C.hb_client_t, extra unsafe.Pointer) {
   *((*chan C.int32_t)(extra)) <- err
 }
-
-// Unimplemented: Flush()
 
 // Close cleans up all associated structures from Client and waits before returning
 func (cl *Client) Close() error {

@@ -26,23 +26,21 @@ func benchmarkScan(numRows, rowSize int, b *testing.B) {
         break
       }
     }
-    fmt.Printf("%d ?= %d\n", numRows, count)
 
   }
 }
 
-func BenchmarkPutAsync_100(b *testing.B)   { benchmarkPut2(500, 100, b) }
-func BenchmarkGetAsync_100(b *testing.B)   { benchmarkScan(500, 100, b) }
+func BenchmarkPutAsync_100(b *testing.B)  { benchmarkPut2(500, 100, b) }
+func BenchmarkGetAsync_100(b *testing.B)  { benchmarkScan(500, 100, b) }
 func BenchmarkPutAsync_1K(b *testing.B)   { benchmarkPut2(500, 1*1024, b) }
 func BenchmarkGetAsync_1K(b *testing.B)   { benchmarkScan(500, 1*1024, b) }
 func BenchmarkPutAsync_5K(b *testing.B)   { benchmarkPut2(500, 5*1024, b) }
 func BenchmarkGetAsync_5K(b *testing.B)   { benchmarkScan(500, 5*1024, b) }
-func BenchmarkPutAsync_10K(b *testing.B)   { benchmarkPut2(500, 10*1024, b) }
-func BenchmarkGetAsync_10K(b *testing.B)   { benchmarkScan(500, 10*1024, b) }
-func BenchmarkPutAsync_20K(b *testing.B)   { benchmarkPut2(500, 20*1024, b) }
-func BenchmarkGetAsync_20K(b *testing.B)   { benchmarkScan(500, 20*1024, b) }
-func BenchmarkPutAsync_50K(b *testing.B)   { benchmarkPut2(500, 50*1024, b) }
-func BenchmarkGetAsync_50K(b *testing.B)   { benchmarkScan(500, 50*1024, b) }
-func BenchmarkPutAsync_100K(b *testing.B)   { benchmarkPut2(500, 100*1024, b) }
-func BenchmarkGetAsync_100K(b *testing.B)   { benchmarkScan(500, 100*1024, b) }
-
+func BenchmarkPutAsync_10K(b *testing.B)  { benchmarkPut2(500, 10*1024, b) }
+func BenchmarkGetAsync_10K(b *testing.B)  { benchmarkScan(500, 10*1024, b) }
+func BenchmarkPutAsync_20K(b *testing.B)  { benchmarkPut2(500, 20*1024, b) }
+func BenchmarkGetAsync_20K(b *testing.B)  { benchmarkScan(500, 20*1024, b) }
+func BenchmarkPutAsync_50K(b *testing.B)  { benchmarkPut2(500, 50*1024, b) }
+func BenchmarkGetAsync_50K(b *testing.B)  { benchmarkScan(500, 50*1024, b) }
+func BenchmarkPutAsync_100K(b *testing.B) { benchmarkPut2(500, 100*1024, b) }
+func BenchmarkGetAsync_100K(b *testing.B) { benchmarkScan(500, 100*1024, b) }

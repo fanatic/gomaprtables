@@ -9,19 +9,12 @@ void get_send_cb(int32_t err, hb_client_t client, hb_get_t get, hb_result_t resu
 */
 import "C"
 import "unsafe"
-import "fmt"
-
-//Unimplemented: Get Column
-//Unimplemented: Get with filter
-//Unimplemented: Get timestamp
-//Unimplemented: Get with time range
 
 //Get queues a request to retrieve a row.  The result will be placed on the cb channel.
-func (cl *Client) Get(nameSpace *string, tableName string, rowKey []byte, cb *chan CallbackResult) error {
+func (cl *Client) Get(nameSpace *string, tableName string, rowKey []byte, columns *[]Column, filter *string, numVersions *int, timestamp *int64, timestampRange *TimeRange, cb *chan CallbackResult) error {
   var get C.hb_get_t
-  e := C.hb_get_create((*C.byte_t)(unsafe.Pointer(&rowKey[0])), (C.size_t)(len(rowKey)), &get)
+  e := C.hb_get_create(cBytes(rowKey), cLen(rowKey), &get)
   if e != 0 {
-    fmt.Printf("get_create: %d\n", e)
     return Errno(e)
   }
 
@@ -29,6 +22,7 @@ func (cl *Client) Get(nameSpace *string, tableName string, rowKey []byte, cb *ch
     ns := C.CString(*nameSpace)
     e = C.hb_get_set_namespace(get, ns, C.strlen(ns))
     if e != 0 {
+      C.hb_get_destroy(get)
       return Errno(e)
     }
   }
@@ -36,13 +30,63 @@ func (cl *Client) Get(nameSpace *string, tableName string, rowKey []byte, cb *ch
   tn := C.CString(tableName)
   e = C.hb_get_set_table(get, tn, C.strlen(tn))
   if e != 0 {
-    fmt.Printf("set_table: %d\n", e)
+    C.hb_get_destroy(get)
     return Errno(e)
+  }
+
+  if columns != nil {
+    for _, column := range *columns {
+      if column.Qualifier == nil {
+        e = C.hb_get_add_column(get, cBytes(column.Family), cLen(column.Family), nil, 0)
+        if e != 0 {
+          C.hb_get_destroy(get)
+          return Errno(e)
+        }
+      } else {
+        e = C.hb_get_add_column(get, cBytes(column.Family), cLen(column.Family), cBytes(*column.Qualifier), cLen(*column.Qualifier))
+        if e != 0 {
+          C.hb_get_destroy(get)
+          return Errno(e)
+        }
+      }
+    }
+  }
+
+  if filter != nil {
+    cf := C.CString(*filter)
+    e = C.hb_get_set_filter(get, cf)
+    if e != 0 {
+      C.hb_get_destroy(get)
+      return Errno(e)
+    }
+  }
+
+  if numVersions != nil {
+    e = C.hb_get_set_num_versions(get, C.int32_t(*numVersions))
+    if e != 0 {
+      C.hb_get_destroy(get)
+      return Errno(e)
+    }
+  }
+
+  if timestamp != nil {
+    e = C.hb_get_set_timestamp(get, C.int64_t(*timestamp))
+    if e != 0 {
+      C.hb_get_destroy(get)
+      return Errno(e)
+    }
+  }
+
+  if timestampRange != nil {
+    e = C.hb_get_set_timerange(get, C.int64_t(timestampRange.MinTimestamp), C.int64_t(timestampRange.MaxTimestamp))
+    if e != 0 {
+      C.hb_get_destroy(get)
+      return Errno(e)
+    }
   }
 
   e = C.hb_get_send(cl.client, get, (C.hb_get_cb)(C.get_send_cb), (unsafe.Pointer)(cb))
   if e != 0 {
-    fmt.Printf("get_send: %d\n", e)
     return Errno(e)
   }
   return nil

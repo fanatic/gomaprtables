@@ -18,6 +18,19 @@ type Cell struct {
   Timestamp *time.Time
 }
 
+type Column struct {
+  Family    []byte
+  Qualifier *[]byte /* Optional */
+  Timestamp *int64  /* Optional, used in Delete only */
+}
+
+type TimeRange struct {
+  MinTimestamp int64
+  MaxTimestamp int64
+}
+
+const LATESTTIMESTAMP int64 = C.HBASE_LATEST_TIMESTAMP
+
 //NewCell is used internally to create a Cell from the C object
 func newCell(cCell *C.hb_cell_t) *Cell {
   c := Cell{
