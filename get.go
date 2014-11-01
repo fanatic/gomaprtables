@@ -13,7 +13,7 @@ import "unsafe"
 //Get queues a request to retrieve a row.  The result will be placed on the cb channel.
 func (cl *Client) Get(nameSpace *string, tableName string, rowKey []byte, columns *[]Column, filter *string, numVersions *int, timestamp *int64, timestampRange *TimeRange, cb *chan CallbackResult) error {
   var get C.hb_get_t
-  e := C.hb_get_create(cBytes(rowKey), cLen(rowKey), &get)
+  e := C.hb_get_create(cBytes(&rowKey), cLen(rowKey), &get)
   if e != 0 {
     return Errno(e)
   }
@@ -37,13 +37,13 @@ func (cl *Client) Get(nameSpace *string, tableName string, rowKey []byte, column
   if columns != nil {
     for _, column := range *columns {
       if column.Qualifier == nil {
-        e = C.hb_get_add_column(get, cBytes(column.Family), cLen(column.Family), nil, 0)
+        e = C.hb_get_add_column(get, cBytes(&column.Family), cLen(column.Family), nil, 0)
         if e != 0 {
           C.hb_get_destroy(get)
           return Errno(e)
         }
       } else {
-        e = C.hb_get_add_column(get, cBytes(column.Family), cLen(column.Family), cBytes(*column.Qualifier), cLen(*column.Qualifier))
+        e = C.hb_get_add_column(get, cBytes(&column.Family), cLen(column.Family), cBytes(&*column.Qualifier), cLen(*column.Qualifier))
         if e != 0 {
           C.hb_get_destroy(get)
           return Errno(e)

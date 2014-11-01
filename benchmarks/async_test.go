@@ -8,6 +8,7 @@ import (
 
 func benchmarkScan(numRows, rowSize int, b *testing.B) {
   client, _ := conn.NewClient()
+  defer client.Close()
   for n := 0; n < b.N; n++ {
     start := fmt.Sprintf("row-%d", rowSize)
     end := fmt.Sprintf("row-%d", rowSize+1)

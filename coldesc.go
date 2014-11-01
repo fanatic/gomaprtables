@@ -20,7 +20,7 @@ type ColDesc struct {
 func (cd *ColDesc) c() (C.hb_columndesc, error) {
   var colDesc C.hb_columndesc
 
-  e := C.hb_coldesc_create(cBytes(cd.Name), cLen(cd.Name), &colDesc)
+  e := C.hb_coldesc_create(cBytes(&cd.Name), cLen(cd.Name), &colDesc)
   if e != 0 {
     return nil, Errno(e)
   }

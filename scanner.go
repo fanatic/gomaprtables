@@ -36,14 +36,14 @@ func (cl *Client) Scan(nameSpace *string, tableName string, startRow, endRow []b
   }
 
   if startRow != nil {
-    e = C.hb_scanner_set_start_row(scan, cBytes(startRow), cLen(startRow))
+    e = C.hb_scanner_set_start_row(scan, cBytes(&startRow), cLen(startRow))
     if e != 0 {
       return Errno(e)
     }
   }
 
   if endRow != nil {
-    e = C.hb_scanner_set_end_row(scan, cBytes(endRow), cLen(endRow))
+    e = C.hb_scanner_set_end_row(scan, cBytes(&endRow), cLen(endRow))
     if e != 0 {
       return Errno(e)
     }

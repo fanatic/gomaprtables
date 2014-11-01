@@ -26,7 +26,8 @@ func (conn *Connection) NewAdminClient() (*AdminClient, error) {
 
 //export adminCloseCallback
 func adminCloseCallback(err C.int32_t, admin C.hb_admin_t, extra unsafe.Pointer) {
-  *((*chan C.int32_t)(extra)) <- err
+  cb := (*chan C.int32_t)(extra)
+  *cb <- err
 }
 
 //IsTableExist checks if a table exists.  Returns nil if table exists.
@@ -127,6 +128,10 @@ func (a *AdminClient) CreateTable(nameSpace *string, tableName string, families 
   e := C.hb_admin_table_create(a.admin, ns, tn, (*C.hb_columndesc)(unsafe.Pointer(&cFamilies[0])), C.size_t(len(families)))
   if e != 0 {
     return Errno(e)
+  }
+
+  for _, cFam := range cFamilies {
+    destroy(cFam)
   }
   return nil
 }

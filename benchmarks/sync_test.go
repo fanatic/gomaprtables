@@ -23,6 +23,8 @@ func benchmarkPut2(numRows, rowSize int, b *testing.B) {
       conn.Put(tableName, row, cells, &cb)
     }
 
+    //conn.Flush()
+
     // Wait for receipt for now
     for i := 0; i < numRows; i++ {
       <-cb

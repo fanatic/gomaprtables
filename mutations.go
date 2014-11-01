@@ -25,7 +25,7 @@ const (
 func (cl *Client) Put(nameSpace *string, tableName string, bufferable *bool, durability *Durability, rowKey []byte, cells []Cell, cb *chan CallbackResult) error {
   var put C.hb_put_t
 
-  e := C.hb_put_create(cBytes(rowKey), cLen(rowKey), &put)
+  e := C.hb_put_create(cBytes(&rowKey), cLen(rowKey), &put)
   if e != 0 {
     return Errno(e)
   }
@@ -82,7 +82,7 @@ func (cl *Client) Put(nameSpace *string, tableName string, bufferable *bool, dur
 func (cl *Client) DeleteRow(nameSpace *string, tableName string, bufferable *bool, durability *Durability, rowKey []byte, timestamp *int64, cb *chan CallbackResult) error {
   var del C.hb_delete_t
 
-  e := C.hb_delete_create(cBytes(rowKey), cLen(rowKey), &del)
+  e := C.hb_delete_create(cBytes(&rowKey), cLen(rowKey), &del)
   if e != 0 {
     return Errno(e)
   }
@@ -139,7 +139,7 @@ func (cl *Client) DeleteRow(nameSpace *string, tableName string, bufferable *boo
 func (cl *Client) DeleteColumns(nameSpace *string, tableName string, bufferable *bool, durability *Durability, rowKey []byte, columns []Column, cb *chan CallbackResult) error {
   var del C.hb_delete_t
 
-  e := C.hb_delete_create(cBytes(rowKey), cLen(rowKey), &del)
+  e := C.hb_delete_create(cBytes(&rowKey), cLen(rowKey), &del)
   if e != 0 {
     return Errno(e)
   }
@@ -183,13 +183,13 @@ func (cl *Client) DeleteColumns(nameSpace *string, tableName string, bufferable 
     }
 
     if column.Qualifier == nil {
-      e = C.hb_delete_add_column(del, cBytes(column.Family), cLen(column.Family), nil, 0, ts)
+      e = C.hb_delete_add_column(del, cBytes(&column.Family), cLen(column.Family), nil, 0, ts)
       if e != 0 {
         C.hb_mutation_destroy((C.hb_mutation_t)(del))
         return Errno(e)
       }
     } else {
-      e = C.hb_delete_add_column(del, cBytes(column.Family), cLen(column.Family), cBytes(*column.Qualifier), cLen(*column.Qualifier), ts)
+      e = C.hb_delete_add_column(del, cBytes(&column.Family), cLen(column.Family), cBytes(&*column.Qualifier), cLen(*column.Qualifier), ts)
       if e != 0 {
         C.hb_mutation_destroy((C.hb_mutation_t)(del))
         return Errno(e)
@@ -214,7 +214,7 @@ type Increment struct {
 func (cl *Client) Increment(nameSpace *string, tableName string, rowKey []byte, durability *Durability, cells []Increment, cb *chan CallbackResult) error {
   var incr C.hb_increment_t
 
-  e := C.hb_increment_create(cBytes(rowKey), cLen(rowKey), &incr)
+  e := C.hb_increment_create(cBytes(&rowKey), cLen(rowKey), &incr)
   if e != 0 {
     return Errno(e)
   }
@@ -263,7 +263,7 @@ func (cl *Client) Increment(nameSpace *string, tableName string, rowKey []byte, 
 func (cl *Client) Append(nameSpace *string, tableName string, rowKey []byte, durability *Durability, cells []Cell, cb *chan CallbackResult) error {
   var app C.hb_append_t
 
-  e := C.hb_append_create(cBytes(rowKey), cLen(rowKey), &app)
+  e := C.hb_append_create(cBytes(&rowKey), cLen(rowKey), &app)
   if e != 0 {
     return Errno(e)
   }

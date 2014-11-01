@@ -10,7 +10,6 @@ void cl_flush_cb(int32_t err, hb_client_t client, void *extra);
 */
 import "C"
 import "unsafe"
-import "fmt"
 
 // Client represents a client for manipulating rows and cells within a table
 type Client struct {
@@ -29,33 +28,32 @@ func (conn *Connection) NewClient() (*Client, error) {
 
 //export clientFlushCallback
 func clientFlushCallback(err C.int32_t, client C.hb_client_t, extra unsafe.Pointer) {
-  fmt.Printf("Flush callback entered\n")
-  *((*chan C.int32_t)(extra)) <- err
+  cb := (*chan C.int32_t)(extra)
+  *cb <- err
 }
 
 // Flush any buffered client-side write operations to HBase.  Waits until everything
 // that has been buffered at the time of the call has been flushed.
 // Note: This doesn't guarantee that ALL outstanding RPCs have completed
+// BUG: This seems to hang forever :(
 func (cl *Client) Flush() error {
   errCB := make(chan C.int32_t)
-  fmt.Printf("About to flush\n")
   e := C.hb_client_flush(cl.client, (C.hb_client_flush_cb)(C.cl_flush_cb), (unsafe.Pointer)(&errCB))
   if e != 0 {
     return Errno(e)
   }
-  fmt.Printf("Flush requested\n")
   // Wait around for the callback
   e = <-errCB
   if e != 0 {
     return Errno(e)
   }
-  fmt.Printf("Flush complete\n")
   return nil
 }
 
 //export clientCloseCallback
 func clientCloseCallback(err C.int32_t, client C.hb_client_t, extra unsafe.Pointer) {
-  *((*chan C.int32_t)(extra)) <- err
+  cb := (*chan C.int32_t)(extra)
+  *cb <- err
 }
 
 // Close cleans up all associated structures from Client and waits before returning
